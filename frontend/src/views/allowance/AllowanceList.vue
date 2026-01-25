@@ -7,7 +7,7 @@
           <template #header>
             <div class="card-header">
               <span>人员名单</span>
-          <el-button type="primary" @click="handleAddPerson">
+          <el-button type="primary" @click="openAddPersonDialog">
             <el-icon><Plus /></el-icon>
             新增人员
           </el-button>
@@ -314,6 +314,17 @@ function handleReset(): void {
 function handleEditPerson(row: AllowancePerson): void {
   editingPerson.value = row
   Object.assign(personForm, row)
+  showPersonDialog.value = true
+}
+
+function openAddPersonDialog(): void {
+  editingPerson.value = null
+  Object.assign(personForm, {
+    name: '',
+    department: '',
+    allowanceType: '交通补贴',
+    standardAmount: 0
+  })
   showPersonDialog.value = true
 }
 

@@ -26,18 +26,10 @@
         </el-form-item>
 
         <el-form-item label="员工薪酬明细">
-          <el-button type="primary" @click="handleAddEmployee">添加员工</el-button>
+          <el-button type="primary" @click="showEmployeeSelectDialog = true">选择员工</el-button>
           <el-table :data="form.employees" style="width: 100%; margin-top: 20px" table-layout="auto">
-            <el-table-column prop="name" label="姓名" min-width="120">
-              <template #default="{ row, $index }">
-                <el-input v-model="row.name" @blur="calculateTotal($index)" />
-              </template>
-            </el-table-column>
-            <el-table-column prop="department" label="部门" min-width="150">
-              <template #default="{ row, $index }">
-                <el-input v-model="row.department" />
-              </template>
-            </el-table-column>
+            <el-table-column prop="name" label="姓名" min-width="120" />
+            <el-table-column prop="department" label="部门" min-width="150" />
             <el-table-column prop="baseSalary" label="基本工资" min-width="150">
               <template #default="{ row, $index }">
                 <el-input-number
@@ -103,6 +95,29 @@
         </el-form-item>
       </el-form>
     </el-card>
+
+    <!-- 员工选择对话框 -->
+    <el-dialog
+      v-model="showEmployeeSelectDialog"
+      title="选择员工"
+      width="600px"
+    >
+      <el-table
+        ref="employeeTableRef"
+        :data="availableEmployees"
+        @selection-change="handleEmployeeSelectionChange"
+        max-height="400"
+        table-layout="auto"
+      >
+        <el-table-column type="selection" width="55" />
+        <el-table-column prop="name" label="姓名" min-width="120" />
+        <el-table-column prop="department" label="部门" min-width="150" />
+      </el-table>
+      <template #footer>
+        <el-button @click="showEmployeeSelectDialog = false">取消</el-button>
+        <el-button type="primary" @click="confirmEmployeeSelection">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -112,16 +127,20 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { useSalaryStore } from '@/stores/salary'
 import { useUserStore } from '@/stores/user'
+import { useAllowanceStore } from '@/stores/allowance'
 import { generateId } from '@/utils/mock'
-import type { SalaryEmployee } from '@/types'
+import type { SalaryEmployee, AllowancePerson } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 const salaryStore = useSalaryStore()
 const userStore = useUserStore()
+const allowanceStore = useAllowanceStore()
 
 const formRef = ref<FormInstance>()
 const isEdit = ref(false)
+const showEmployeeSelectDialog = ref(false)
+const tempSelectedEmployees = ref<AllowancePerson[]>([])
 
 const form = reactive({
   month: '',
@@ -138,37 +157,45 @@ const rules: FormRules = {
   ]
 }
 
+// 可选员工列表（排除已添加的）
+const availableEmployees = computed(() => {
+  const addedNames = form.employees.map(e => e.name)
+  return allowanceStore.persons.filter(p => !addedNames.includes(p.name))
+})
+
 const totalAmount = computed(() => {
   return form.employees.reduce((sum, emp) => sum + emp.total, 0)
 })
 
-function handleAddEmployee(): void {
-  form.employees.push({
-    id: generateId(),
-    name: '',
-    department: '',
-    baseSalary: 0,
-    performance: 0,
-    deduction: 0,
-    total: 0
+function handleEmployeeSelectionChange(selection: AllowancePerson[]): void {
+  tempSelectedEmployees.value = selection
+}
+
+function confirmEmployeeSelection(): void {
+  tempSelectedEmployees.value.forEach(person => {
+    form.employees.push({
+      id: generateId(),
+      name: person.name,
+      department: person.department,
+      baseSalary: 0,
+      performance: 0,
+      deduction: 0,
+      total: 0
+    })
   })
+  tempSelectedEmployees.value = []
+  showEmployeeSelectDialog.value = false
 }
 
 function handleRemoveEmployee(index: number): void {
   form.employees.splice(index, 1)
-  updateFormTotal()
 }
 
 function calculateTotal(index: number): void {
   const emp = form.employees[index]
   if (emp) {
     emp.total = emp.baseSalary + emp.performance - emp.deduction
-    updateFormTotal()
   }
-}
-
-function updateFormTotal(): void {
-  // 触发响应式更新
 }
 
 function handleSubmit(): void {
@@ -182,9 +209,9 @@ function handleSubmit(): void {
       }
 
       // 验证员工信息完整性
-      const hasInvalid = form.employees.some(emp => !emp.name || !emp.department)
+      const hasInvalid = form.employees.some(emp => !emp.name || !emp.department || emp.baseSalary <= 0)
       if (hasInvalid) {
-        ElMessage.warning('请完善所有员工信息')
+        ElMessage.warning('请完善所有员工的薪酬信息（基本工资必须大于0）')
         return
       }
 
@@ -213,6 +240,7 @@ function handleCancel(): void {
 }
 
 onMounted(() => {
+  allowanceStore.initAllowance()
   form.declarant = userStore.user?.name || ''
 
   if (route.params.id) {
