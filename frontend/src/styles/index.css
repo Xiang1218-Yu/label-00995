@@ -15,6 +15,16 @@ html, body {
 
 /* 固定输入框宽度，防止获取焦点时变化 */
 .el-input {
+  box-sizing: border-box;
+}
+
+/* 分割线文字背景色与整体背景一致 */
+.el-divider__text {
+  background-color: #f5f7fa;
+}
+
+.el-card .el-divider__text {
+  background-color: #fff;
 }
 
 .el-input--large {

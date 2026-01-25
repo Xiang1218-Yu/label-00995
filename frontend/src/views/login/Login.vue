@@ -349,8 +349,6 @@ async function handleLogin(): Promise<void> {
 .divider-text {
   color: #909399;
   font-size: 12px;
-  padding: 0 16px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 50%, #f0f2f5 100%);
 }
 
 .account-info {
