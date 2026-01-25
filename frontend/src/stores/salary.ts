@@ -1,9 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { storage } from '@/utils/storage'
-import { generateId } from '@/utils/mock'
-import dayjs from 'dayjs'
-import type { SalaryDeclaration, SalaryPayment, SalaryEmployee } from '@/types'
+import { generateId, generateSalaryDeclarations, generateSalaryPayments } from '@/utils/mock'
+import type { SalaryDeclaration, SalaryPayment } from '@/types'
 
 export const useSalaryStore = defineStore('salary', () => {
   const declarations = ref<SalaryDeclaration[]>(storage.get<SalaryDeclaration[]>('salary_declarations') || [])
@@ -83,14 +82,38 @@ export const useSalaryStore = defineStore('salary', () => {
     }
   }
 
+  function approveDeclaration(id: string): void {
+    const declaration = declarations.value.find(dec => dec.id === id)
+    if (declaration) {
+      declaration.status = '已通过'
+      saveDeclarations()
+      // 自动创建发放记录
+      addPayment(id)
+    }
+  }
+
+  function rejectDeclaration(id: string, reason: string): void {
+    const declaration = declarations.value.find(dec => dec.id === id)
+    if (declaration) {
+      declaration.status = '待审核' // 保持待审核状态，实际项目可添加"已驳回"状态
+      // 可以在这里记录驳回原因
+      saveDeclarations()
+    }
+  }
+
   function initSalary(): void {
     const savedDeclarations = storage.get<SalaryDeclaration[]>('salary_declarations')
     const savedPayments = storage.get<SalaryPayment[]>('salary_payments')
-    if (savedDeclarations) {
+    
+    if (!savedDeclarations || savedDeclarations.length === 0) {
+      // 生成初始 mock 数据
+      declarations.value = generateSalaryDeclarations()
+      payments.value = generateSalaryPayments(declarations.value)
+      saveDeclarations()
+      savePayments()
+    } else {
       declarations.value = savedDeclarations
-    }
-    if (savedPayments) {
-      payments.value = savedPayments
+      payments.value = savedPayments || []
     }
   }
 
@@ -105,6 +128,8 @@ export const useSalaryStore = defineStore('salary', () => {
     deleteDeclaration,
     addPayment,
     confirmPayment,
+    approveDeclaration,
+    rejectDeclaration,
     initSalary
   }
 })

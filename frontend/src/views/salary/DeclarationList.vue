@@ -32,6 +32,17 @@
           <el-form-item>
             <el-button type="primary" @click="handleSearch">搜索</el-button>
             <el-button @click="handleReset">重置</el-button>
+            <el-dropdown @command="handleExportAll" style="margin-left: 12px">
+              <el-button>
+                导出<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="excel">导出 Excel</el-dropdown-item>
+                  <el-dropdown-item command="csv">导出 CSV</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </el-form-item>
         </el-form>
       </div>
@@ -66,18 +77,48 @@
             {{ formatDate(row.createTime) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="250" fixed="right">
+        <el-table-column label="操作" min-width="300" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="handleEdit(row)">
+            <el-button
+              v-if="row.status === '待审核'"
+              type="success"
+              link
+              size="small"
+              @click="handleApprove(row)"
+            >
+              审批通过
+            </el-button>
+            <el-button
+              v-if="row.status === '待审核'"
+              type="danger"
+              link
+              size="small"
+              @click="handleReject(row)"
+            >
+              驳回
+            </el-button>
+            <el-button
+              v-if="row.status === '待审核'"
+              type="primary"
+              link
+              size="small"
+              @click="handleEdit(row)"
+            >
               编辑
             </el-button>
-            <el-button type="success" link size="small" @click="handleView(row)">
+            <el-button type="info" link size="small" @click="handleView(row)">
               查看明细
             </el-button>
             <el-button type="warning" link size="small" @click="handleExport(row)">
-              导出Excel
+              导出
             </el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(row)">
+            <el-button
+              v-if="row.status === '待审核'"
+              type="danger"
+              link
+              size="small"
+              @click="handleDelete(row)"
+            >
               删除
             </el-button>
           </template>
@@ -103,11 +144,12 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, ArrowDown } from '@element-plus/icons-vue'
 import { useSalaryStore } from '@/stores/salary'
 import type { SalaryDeclaration } from '@/types'
 import dayjs from 'dayjs'
 import * as XLSX from 'xlsx'
+import { exportToCSV } from '@/utils/export'
 
 const router = useRouter()
 const salaryStore = useSalaryStore()
@@ -248,6 +290,56 @@ function handleDelete(row: SalaryDeclaration): void {
     ElMessage.success('删除成功')
     handleSearch()
   }).catch(() => {})
+}
+
+function handleApprove(row: SalaryDeclaration): void {
+  ElMessageBox.confirm(
+    `确定要审批通过该薪酬申报吗？<br/>月份：${row.month}<br/>总金额：¥${row.totalAmount.toFixed(2)}<br/>员工数：${row.employees.length}人`,
+    '审批确认',
+    {
+      type: 'warning',
+      dangerouslyUseHTMLString: true
+    }
+  ).then(() => {
+    salaryStore.approveDeclaration(row.id)
+    ElMessage.success('审批通过，已生成发放记录')
+    pagination.total = filteredData.value.length
+  }).catch(() => {})
+}
+
+function handleReject(row: SalaryDeclaration): void {
+  ElMessageBox.prompt('请输入驳回原因', '驳回申报', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    inputPattern: /.+/,
+    inputErrorMessage: '请输入驳回原因'
+  }).then(({ value }) => {
+    salaryStore.rejectDeclaration(row.id, value)
+    ElMessage.success('已驳回')
+    pagination.total = filteredData.value.length
+  }).catch(() => {})
+}
+
+function handleExportAll(type: string): void {
+  const data = filteredData.value.map(item => ({
+    月份: item.month,
+    申报人: item.declarant,
+    总金额: item.totalAmount,
+    员工数: item.employees.length,
+    状态: item.status,
+    创建时间: formatDate(item.createTime)
+  }))
+
+  if (type === 'csv') {
+    exportToCSV(data, '薪酬申报列表')
+    ElMessage.success('CSV导出成功')
+  } else {
+    const ws = XLSX.utils.json_to_sheet(data)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, '薪酬申报')
+    XLSX.writeFile(wb, `薪酬申报列表_${new Date().getTime()}.xlsx`)
+    ElMessage.success('Excel导出成功')
+  }
 }
 
 function handleSizeChange(size: number): void {

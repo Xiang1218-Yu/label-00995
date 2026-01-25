@@ -127,3 +127,65 @@ export function generateFunds(): Fund[] {
   ]
   return funds
 }
+
+
+/**
+ * 生成薪酬申报Mock数据
+ */
+export function generateSalaryDeclarations(): SalaryDeclaration[] {
+  const departments = ['技术部', '市场部', '财务部', '人事部', '运营部', '研发部']
+  const names = ['张三', '李四', '王五', '赵六', '钱七', '孙八', '周九', '吴十', '郑一', '王二']
+  
+  const declarations: SalaryDeclaration[] = []
+  
+  // 生成最近3个月的申报数据
+  for (let m = 0; m < 3; m++) {
+    const month = dayjs().subtract(m, 'month').format('YYYY-MM')
+    const employees = names.map((name, index) => {
+      const baseSalary = Math.round((8000 + Math.random() * 12000) * 100) / 100
+      const performance = Math.round((1000 + Math.random() * 5000) * 100) / 100
+      const deduction = Math.round((Math.random() * 500) * 100) / 100
+      return {
+        id: generateId(),
+        name,
+        department: departments[index % departments.length],
+        baseSalary,
+        performance,
+        deduction,
+        total: baseSalary + performance - deduction
+      }
+    })
+    
+    const totalAmount = employees.reduce((sum, emp) => sum + emp.total, 0)
+    const statuses: Array<'待审核' | '已通过' | '已发放'> = ['待审核', '已通过', '已发放']
+    
+    declarations.push({
+      id: generateId(),
+      month,
+      declarant: '管理员',
+      totalAmount,
+      status: m === 0 ? '待审核' : (m === 1 ? '已通过' : '已发放'),
+      employees,
+      createTime: dayjs().subtract(m, 'month').toISOString()
+    })
+  }
+  
+  return declarations
+}
+
+/**
+ * 生成薪酬发放Mock数据
+ */
+export function generateSalaryPayments(declarations: SalaryDeclaration[]): import('@/types').SalaryPayment[] {
+  return declarations
+    .filter(dec => dec.status === '已通过' || dec.status === '已发放')
+    .map(dec => ({
+      id: generateId(),
+      declarationId: dec.id,
+      month: dec.month,
+      totalAmount: dec.totalAmount,
+      employeeCount: dec.employees.length,
+      status: dec.status === '已发放' ? '已发放' as const : '待发放' as const,
+      paymentTime: dec.status === '已发放' ? dayjs().subtract(1, 'month').toISOString() : undefined
+    }))
+}

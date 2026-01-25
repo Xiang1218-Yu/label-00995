@@ -25,6 +25,17 @@
           <el-form-item>
             <el-button type="primary" @click="handleSearch">搜索</el-button>
             <el-button @click="handleReset">重置</el-button>
+            <el-dropdown @command="handleExportAll" style="margin-left: 12px">
+              <el-button>
+                导出<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="excel">导出 Excel</el-dropdown-item>
+                  <el-dropdown-item command="csv">导出 CSV</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </el-form-item>
         </el-form>
       </div>
@@ -136,9 +147,12 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { ArrowDown } from '@element-plus/icons-vue'
 import { useSalaryStore } from '@/stores/salary'
 import type { SalaryPayment } from '@/types'
 import dayjs from 'dayjs'
+import * as XLSX from 'xlsx'
+import { exportToCSV } from '@/utils/export'
 
 const salaryStore = useSalaryStore()
 
@@ -224,9 +238,85 @@ function handleView(row: SalaryPayment): void {
 }
 
 function handlePrint(row: SalaryPayment): void {
-  ElMessage.success('打印功能已模拟，实际项目中需要调用打印接口')
-  // 实际项目中可以打开新窗口打印
-  // window.print()
+  const dec = salaryStore.getDeclarationById(row.declarationId)
+  if (!dec) {
+    ElMessage.error('未找到申报数据')
+    return
+  }
+
+  // 生成打印内容
+  const printContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>工资条 - ${dec.month}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h1 { text-align: center; color: #333; }
+        .info { margin-bottom: 20px; }
+        .info p { margin: 5px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f5f7fa; }
+        .total { font-weight: bold; }
+        .footer { margin-top: 30px; text-align: right; font-size: 12px; color: #999; }
+        @media print {
+          body { padding: 0; }
+          .no-print { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <h1>工资条</h1>
+      <div class="info">
+        <p><strong>月份：</strong>${dec.month}</p>
+        <p><strong>总金额：</strong>¥${dec.totalAmount.toFixed(2)}</p>
+        <p><strong>员工数：</strong>${dec.employees.length}人</p>
+        <p><strong>发放时间：</strong>${row.paymentTime ? formatDate(row.paymentTime) : '待发放'}</p>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>姓名</th>
+            <th>部门</th>
+            <th>基本工资</th>
+            <th>绩效</th>
+            <th>扣款</th>
+            <th>合计</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${dec.employees.map(emp => `
+            <tr>
+              <td>${emp.name}</td>
+              <td>${emp.department}</td>
+              <td>¥${emp.baseSalary.toFixed(2)}</td>
+              <td>¥${emp.performance.toFixed(2)}</td>
+              <td>¥${emp.deduction.toFixed(2)}</td>
+              <td class="total">¥${emp.total.toFixed(2)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div class="footer">
+        打印时间：${dayjs().format('YYYY-MM-DD HH:mm:ss')}
+      </div>
+    </body>
+    </html>
+  `
+
+  // 打开新窗口打印
+  const printWindow = window.open('', '_blank')
+  if (printWindow) {
+    printWindow.document.write(printContent)
+    printWindow.document.close()
+    printWindow.focus()
+    setTimeout(() => {
+      printWindow.print()
+    }, 250)
+  } else {
+    ElMessage.error('无法打开打印窗口，请检查浏览器设置')
+  }
 }
 
 function handleSizeChange(size: number): void {
@@ -236,6 +326,27 @@ function handleSizeChange(size: number): void {
 
 function handlePageChange(page: number): void {
   pagination.page = page
+}
+
+function handleExportAll(type: string): void {
+  const data = filteredData.value.map(item => ({
+    月份: item.month,
+    总金额: item.totalAmount,
+    员工数: item.employeeCount,
+    状态: item.status,
+    发放时间: item.paymentTime ? formatDate(item.paymentTime) : '-'
+  }))
+
+  if (type === 'csv') {
+    exportToCSV(data, '薪酬发放列表')
+    ElMessage.success('CSV导出成功')
+  } else {
+    const ws = XLSX.utils.json_to_sheet(data)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, '薪酬发放')
+    XLSX.writeFile(wb, `薪酬发放列表_${new Date().getTime()}.xlsx`)
+    ElMessage.success('Excel导出成功')
+  }
 }
 
 onMounted(() => {

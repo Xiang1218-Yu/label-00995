@@ -96,20 +96,40 @@ const iconMap: Record<string, any> = {
 const currentRoute = computed(() => route)
 const activeMenu = computed(() => route.path)
 
+// 菜单顺序
+const menuOrder = [
+  '/dashboard',
+  '/invoice',
+  '/remittance',
+  '/reimbursement',
+  '/allowance',
+  '/salary/declaration',
+  '/salary/payment',
+  '/fund'
+]
+
 // 菜单路由（过滤掉隐藏的路由和无权限的路由）
 const menuRoutes = computed(() => {
   const routes = router.getRoutes()
   const userRole = userStore.user?.role || ''
-  return routes.filter(r => {
+  const filtered = routes.filter(r => {
     // 过滤基础条件
     if (r.path === '/' || r.path === '/login' || r.meta?.hidden) return false
-    if (r.path.split('/').length !== 2) return false
+    // 只显示有图标的菜单项（即主菜单）
+    if (!r.meta?.icon) return false
     
     // 权限过滤
     const roles = r.meta?.roles as string[] | undefined
     if (roles && !roles.includes(userRole)) return false
     
     return true
+  })
+  
+  // 按预定义顺序排序
+  return filtered.sort((a, b) => {
+    const indexA = menuOrder.indexOf(a.path)
+    const indexB = menuOrder.indexOf(b.path)
+    return indexA - indexB
   })
 })
 
