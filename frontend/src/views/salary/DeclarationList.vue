@@ -229,38 +229,51 @@ function handleEdit(row: SalaryDeclaration): void {
 }
 
 function handleView(row: SalaryDeclaration): void {
+  // 计算合计
+  const totalBaseSalary = row.employees.reduce((sum, emp) => sum + emp.baseSalary, 0)
+  const totalPerformance = row.employees.reduce((sum, emp) => sum + emp.performance, 0)
+  const totalDeduction = row.employees.reduce((sum, emp) => sum + emp.deduction, 0)
+  const grandTotal = row.employees.reduce((sum, emp) => sum + emp.total, 0)
+
   // 显示明细对话框
   ElMessageBox.alert(
-    `<div style="max-height: 400px; overflow-y: auto;">
-      <table style="width: 100%; border-collapse: collapse;">
+    `<div style="max-height: 450px; overflow: auto;">
+      <table style="width: 100%; min-width: 700px; border-collapse: collapse; table-layout: auto;">
         <thead>
           <tr style="background: #f5f7fa;">
-            <th style="padding: 8px; border: 1px solid #dcdfe6;">姓名</th>
-            <th style="padding: 8px; border: 1px solid #dcdfe6;">部门</th>
-            <th style="padding: 8px; border: 1px solid #dcdfe6;">基本工资</th>
-            <th style="padding: 8px; border: 1px solid #dcdfe6;">绩效</th>
-            <th style="padding: 8px; border: 1px solid #dcdfe6;">扣款</th>
-            <th style="padding: 8px; border: 1px solid #dcdfe6;">合计</th>
+            <th style="padding: 10px 12px; border: 1px solid #dcdfe6; text-align: left; white-space: nowrap;">姓名</th>
+            <th style="padding: 10px 12px; border: 1px solid #dcdfe6; text-align: left; white-space: nowrap;">部门</th>
+            <th style="padding: 10px 12px; border: 1px solid #dcdfe6; text-align: right; white-space: nowrap;">基本工资</th>
+            <th style="padding: 10px 12px; border: 1px solid #dcdfe6; text-align: right; white-space: nowrap;">绩效</th>
+            <th style="padding: 10px 12px; border: 1px solid #dcdfe6; text-align: right; white-space: nowrap;">扣款</th>
+            <th style="padding: 10px 12px; border: 1px solid #dcdfe6; text-align: right; white-space: nowrap;">合计</th>
           </tr>
         </thead>
         <tbody>
           ${row.employees.map(emp => `
             <tr>
-              <td style="padding: 8px; border: 1px solid #dcdfe6;">${emp.name}</td>
-              <td style="padding: 8px; border: 1px solid #dcdfe6;">${emp.department}</td>
-              <td style="padding: 8px; border: 1px solid #dcdfe6;">¥${emp.baseSalary.toFixed(2)}</td>
-              <td style="padding: 8px; border: 1px solid #dcdfe6;">¥${emp.performance.toFixed(2)}</td>
-              <td style="padding: 8px; border: 1px solid #dcdfe6;">¥${emp.deduction.toFixed(2)}</td>
-              <td style="padding: 8px; border: 1px solid #dcdfe6;">¥${emp.total.toFixed(2)}</td>
+              <td style="padding: 10px 12px; border: 1px solid #dcdfe6;">${emp.name}</td>
+              <td style="padding: 10px 12px; border: 1px solid #dcdfe6;">${emp.department}</td>
+              <td style="padding: 10px 12px; border: 1px solid #dcdfe6; text-align: right;">¥${emp.baseSalary.toFixed(2)}</td>
+              <td style="padding: 10px 12px; border: 1px solid #dcdfe6; text-align: right;">¥${emp.performance.toFixed(2)}</td>
+              <td style="padding: 10px 12px; border: 1px solid #dcdfe6; text-align: right; color: #f56c6c;">¥${emp.deduction.toFixed(2)}</td>
+              <td style="padding: 10px 12px; border: 1px solid #dcdfe6; text-align: right; font-weight: 600; color: #409eff;">¥${emp.total.toFixed(2)}</td>
             </tr>
           `).join('')}
+          <tr style="background: #ecf5ff; font-weight: 600;">
+            <td style="padding: 10px 12px; border: 1px solid #dcdfe6;" colspan="2">合计（${row.employees.length}人）</td>
+            <td style="padding: 10px 12px; border: 1px solid #dcdfe6; text-align: right;">¥${totalBaseSalary.toFixed(2)}</td>
+            <td style="padding: 10px 12px; border: 1px solid #dcdfe6; text-align: right;">¥${totalPerformance.toFixed(2)}</td>
+            <td style="padding: 10px 12px; border: 1px solid #dcdfe6; text-align: right; color: #f56c6c;">¥${totalDeduction.toFixed(2)}</td>
+            <td style="padding: 10px 12px; border: 1px solid #dcdfe6; text-align: right; color: #409eff; font-size: 15px;">¥${grandTotal.toFixed(2)}</td>
+          </tr>
         </tbody>
       </table>
     </div>`,
-    '薪酬明细',
+    '薪酬明细 - ' + row.month,
     {
       dangerouslyUseHTMLString: true,
-      customStyle: { width: '800px' }
+      customStyle: { width: '750px', maxWidth: '95vw' }
     }
   )
 }
