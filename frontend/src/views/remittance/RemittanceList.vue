@@ -264,4 +264,73 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
 }
+
+/* 响应式样式 */
+@media screen and (max-width: 768px) {
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .card-header .el-button {
+    width: 100%;
+  }
+
+  .search-bar :deep(.el-form--inline) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .search-bar :deep(.el-form--inline .el-form-item) {
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 12px;
+  }
+
+  .search-bar :deep(.el-form-item__content) {
+    width: 100%;
+  }
+
+  .search-bar :deep(.el-input),
+  .search-bar :deep(.el-select) {
+    width: 100% !important;
+  }
+
+  .search-bar :deep(.el-form-item:last-child) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .pagination {
+    justify-content: center;
+  }
+
+  .pagination :deep(.el-pagination) {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .remittance-list :deep(.el-card__body) {
+    padding: 12px;
+    overflow-x: auto;
+  }
+
+  .remittance-list :deep(.el-table) {
+    font-size: 13px;
+    min-width: 600px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .remittance-list :deep(.el-card__body) {
+    padding: 10px;
+  }
+
+  .remittance-list :deep(.el-table) {
+    font-size: 12px;
+    min-width: 500px;
+  }
+}
 </style>

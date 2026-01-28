@@ -1190,4 +1190,303 @@ onMounted(() => {
 .rule-form :deep(.el-radio-button__inner) {
   padding: 8px 16px;
 }
+
+/* ========== 响应式样式 ========== */
+
+/* 平板设备 */
+@media screen and (max-width: 992px) {
+  .card-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .search-bar :deep(.el-form--inline .el-form-item) {
+    margin-right: 10px;
+    margin-bottom: 10px;
+  }
+}
+
+/* 移动端设备 */
+@media screen and (max-width: 768px) {
+  .allowance-list {
+    padding: 0;
+  }
+
+  /* 卡片头部响应式 */
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .card-header .el-button {
+    width: 100%;
+  }
+
+  /* 搜索表单响应式 */
+  .search-bar {
+    margin-bottom: 16px;
+  }
+
+  .search-bar :deep(.el-form--inline) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .search-bar :deep(.el-form--inline .el-form-item) {
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 12px;
+  }
+
+  .search-bar :deep(.el-form-item__content) {
+    width: 100%;
+  }
+
+  .search-bar :deep(.el-input),
+  .search-bar :deep(.el-select) {
+    width: 100% !important;
+  }
+
+  /* 搜索按钮组 */
+  .search-bar :deep(.el-form-item:last-child) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .search-bar :deep(.el-form-item:last-child .el-form-item__content) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* 表格响应式 - 允许横向滚动 */
+  .allowance-list :deep(.el-card__body) {
+    padding: 12px;
+    overflow-x: auto;
+  }
+
+  .allowance-list :deep(.el-table) {
+    font-size: 13px;
+    min-width: 600px;
+  }
+
+  .allowance-list :deep(.el-table .el-table__cell) {
+    padding: 8px 4px;
+  }
+
+  /* 分页响应式 */
+  .pagination {
+    justify-content: center;
+    margin-top: 16px;
+  }
+
+  .pagination :deep(.el-pagination) {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  /* Tabs 响应式 */
+  .allowance-list :deep(.el-tabs__header) {
+    margin-bottom: 12px;
+  }
+
+  .allowance-list :deep(.el-tabs__nav-wrap) {
+    overflow-x: auto;
+  }
+
+  .allowance-list :deep(.el-tabs__item) {
+    padding: 0 12px;
+    font-size: 14px;
+  }
+
+  /* 规则名称单元格 */
+  .rule-name-cell {
+    gap: 4px;
+  }
+
+  .rule-name-cell .el-icon {
+    font-size: 16px;
+  }
+
+  .calculation-desc {
+    font-size: 12px;
+  }
+
+  /* 标签响应式 */
+  .dept-tag {
+    font-size: 11px;
+  }
+
+  /* 按钮响应式 */
+  .allowance-list :deep(.el-button--small) {
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+}
+
+/* 超小屏幕 */
+@media screen and (max-width: 480px) {
+  .allowance-list :deep(.el-card__header) {
+    padding: 12px;
+  }
+
+  .allowance-list :deep(.el-card__body) {
+    padding: 10px;
+  }
+
+  /* 表格更小字体 */
+  .allowance-list :deep(.el-table) {
+    font-size: 12px;
+    min-width: 500px;
+  }
+
+  /* 分页更简化 */
+  .pagination :deep(.el-pagination .el-pager) {
+    display: none;
+  }
+
+  .pagination :deep(.el-pagination) {
+    gap: 4px;
+  }
+}
+
+/* ========== 对话框响应式 ========== */
+@media screen and (max-width: 768px) {
+  /* 人员对话框 */
+  .allowance-list :deep(.el-dialog) {
+    width: 95% !important;
+    max-width: 95% !important;
+    margin: 5vh auto !important;
+  }
+
+  .allowance-list :deep(.el-dialog__body) {
+    padding: 16px;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .allowance-list :deep(.el-dialog__footer) {
+    padding: 12px 16px;
+  }
+
+  /* 表单响应式 */
+  .allowance-list :deep(.el-form-item__label) {
+    width: 80px !important;
+    font-size: 13px;
+  }
+
+  .allowance-list :deep(.el-form-item__content) {
+    margin-left: 80px !important;
+  }
+
+  /* 规则表单 */
+  .rule-form :deep(.el-form-item__label) {
+    width: 90px !important;
+  }
+
+  .rule-form :deep(.el-form-item__content) {
+    margin-left: 90px !important;
+  }
+
+  .rule-form :deep(.el-radio-group) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .rule-form :deep(.el-radio-button__inner) {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .rule-form :deep(.el-row) {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .rule-form :deep(.el-col) {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .rule-form :deep(.el-col-12) {
+    max-width: 100%;
+    flex: 0 0 100%;
+    margin-bottom: 8px;
+  }
+
+  .rule-form :deep(.el-divider) {
+    margin: 16px 0;
+  }
+
+  /* 选择人员对话框表格 */
+  .allowance-list :deep(.el-dialog .el-table) {
+    font-size: 12px;
+  }
+}
+
+/* 超小屏幕对话框 */
+@media screen and (max-width: 480px) {
+  .allowance-list :deep(.el-form-item) {
+    margin-bottom: 14px;
+  }
+
+  .allowance-list :deep(.el-form-item__label) {
+    width: 70px !important;
+    font-size: 12px;
+    padding-right: 8px;
+  }
+
+  .allowance-list :deep(.el-form-item__content) {
+    margin-left: 70px !important;
+  }
+
+  .rule-form :deep(.el-form-item__label) {
+    width: 80px !important;
+  }
+
+  .rule-form :deep(.el-form-item__content) {
+    margin-left: 80px !important;
+  }
+
+  /* 滑块在小屏幕使用输入框模式 */
+  .rule-form :deep(.el-slider__runway) {
+    display: none;
+  }
+
+  .rule-form :deep(.el-slider__input) {
+    width: 100%;
+  }
+}
+
+/* 触摸设备优化 */
+@media (hover: none) and (pointer: coarse) {
+  .allowance-list :deep(.el-button) {
+    min-height: 36px;
+    min-width: 36px;
+  }
+
+  .allowance-list :deep(.el-switch) {
+    height: 24px;
+  }
+
+  .allowance-list :deep(.el-switch__core) {
+    min-width: 44px;
+    height: 24px;
+  }
+
+  .allowance-list :deep(.el-table__row) {
+    height: auto;
+    min-height: 44px;
+  }
+
+  /* 增大点击区域 */
+  .allowance-list :deep(.el-button--text),
+  .allowance-list :deep(.el-button.is-link) {
+    padding: 8px 12px;
+  }
+}
 </style>

@@ -70,3 +70,150 @@ html, body {
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #777;
 }
+
+/* ========== 响应式全局样式 ========== */
+
+/* 搜索栏响应式 */
+@media screen and (max-width: 768px) {
+  .search-bar .el-input,
+  .search-bar .el-select {
+    width: 100% !important;
+  }
+
+  .search-bar :deep(.el-form--inline) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .search-bar :deep(.el-form--inline .el-form-item) {
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 12px;
+  }
+}
+
+/* 表格响应式 */
+@media screen and (max-width: 768px) {
+  /* 表格容器允许横向滚动 */
+  .el-card__body {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 表格最小宽度 */
+  .el-table {
+    min-width: 600px;
+  }
+
+  /* 表格字体调整 */
+  .el-table :deep(.el-table__cell) {
+    padding: 8px 4px;
+    font-size: 13px;
+  }
+
+  /* 表格操作列 */
+  .el-table :deep(.el-table__cell:last-child) {
+    position: sticky;
+    right: 0;
+    background-color: #fff;
+    z-index: 10;
+  }
+
+  .dark .el-table :deep(.el-table__cell:last-child) {
+    background-color: #1f1f1f;
+  }
+}
+
+/* 对话框响应式 */
+@media screen and (max-width: 768px) {
+  .el-dialog {
+    width: 95% !important;
+    max-width: 95% !important;
+    margin: 5vh auto !important;
+  }
+
+  .el-dialog__body {
+    padding: 16px;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .el-dialog__footer {
+    padding: 12px 16px;
+  }
+}
+
+/* 表单响应式 */
+@media screen and (max-width: 768px) {
+  .el-form-item__label {
+    font-size: 13px;
+  }
+
+  .el-form-item__content {
+    font-size: 13px;
+  }
+}
+
+/* 分页响应式 */
+@media screen and (max-width: 768px) {
+  .el-pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .el-pagination__sizes,
+  .el-pagination__jump {
+    display: none;
+  }
+}
+
+/* 卡片响应式 */
+@media screen and (max-width: 768px) {
+  .el-card__header {
+    padding: 12px;
+  }
+
+  .el-card__body {
+    padding: 12px;
+  }
+}
+
+/* 按钮组响应式 */
+@media screen and (max-width: 480px) {
+  .el-button-group {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .el-button-group .el-button {
+    width: 100%;
+    margin-left: 0 !important;
+    margin-top: 8px;
+  }
+
+  .el-button-group .el-button:first-child {
+    margin-top: 0;
+  }
+}
+
+/* 触摸设备优化 */
+@media (hover: none) and (pointer: coarse) {
+  .el-button {
+    min-height: 36px;
+    min-width: 44px;
+  }
+
+  .el-switch {
+    height: 24px;
+  }
+
+  .el-switch__core {
+    min-width: 44px;
+    height: 24px;
+  }
+
+  .el-table__row {
+    min-height: 44px;
+  }
+}

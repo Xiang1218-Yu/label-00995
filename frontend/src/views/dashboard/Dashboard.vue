@@ -301,4 +301,89 @@ onMounted(() => {
 .tables-row {
   margin-bottom: 20px;
 }
+
+/* 响应式样式 */
+@media screen and (max-width: 768px) {
+  .dashboard {
+    padding: 0;
+  }
+
+  .stats-row {
+    margin-bottom: 16px;
+  }
+
+  .stat-card {
+    margin-bottom: 12px;
+  }
+
+  .stat-content {
+    gap: 12px;
+  }
+
+  .stat-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .stat-icon :deep(.el-icon) {
+    font-size: 24px;
+  }
+
+  .stat-value {
+    font-size: 20px;
+  }
+
+  .stat-title {
+    font-size: 13px;
+  }
+
+  .charts-row {
+    margin-bottom: 16px;
+  }
+
+  .charts-row :deep(.el-card__body) {
+    padding: 12px;
+  }
+
+  .charts-row :deep(.el-card__body > div) {
+    height: 250px !important;
+  }
+
+  .tables-row {
+    margin-bottom: 16px;
+  }
+
+  .tables-row :deep(.el-card__body) {
+    padding: 12px;
+    overflow-x: auto;
+  }
+
+  .tables-row :deep(.el-table) {
+    font-size: 13px;
+    min-width: 600px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .stat-icon :deep(.el-icon) {
+    font-size: 20px;
+  }
+
+  .stat-value {
+    font-size: 18px;
+  }
+
+  .stat-title {
+    font-size: 12px;
+  }
+
+  .charts-row :deep(.el-card__body > div) {
+    height: 200px !important;
+  }
+}
 </style>
