@@ -1,5 +1,5 @@
 import dayjs from 'dayjs'
-import type { Invoice, Remittance, Reimbursement, AllowancePerson, AllowanceRecord, SalaryDeclaration, Fund, Project } from '@/types'
+import type { Invoice, Remittance, Reimbursement, AllowancePerson, AllowanceRecord, AllowanceRule, SalaryDeclaration, Fund, Project } from '@/types'
 
 /**
  * 生成随机ID
@@ -87,6 +87,123 @@ export function generateAllowancePersons(): AllowancePerson[] {
     standardAmount: Math.round((Math.random() * 1000 + 500) * 100) / 100,
     allowanceType: types[index % types.length]
   }))
+}
+
+/**
+ * 生成津贴发放规则Mock数据
+ */
+export function generateAllowanceRules(): AllowanceRule[] {
+  const now = new Date().toISOString()
+  
+  return [
+    {
+      id: generateId(),
+      name: '交通补贴固定标准',
+      type: 'fixed',
+      allowanceType: '交通补贴',
+      description: '每月固定发放500元交通补贴，适用于所有部门员工',
+      enabled: true,
+      config: {
+        fixedAmount: 500,
+        minAmount: 0,
+        maxAmount: 800,
+        effectiveDate: dayjs().subtract(6, 'month').format('YYYY-MM-DD'),
+        departments: []
+      },
+      createTime: dayjs().subtract(6, 'month').toISOString(),
+      updateTime: now
+    },
+    {
+      id: generateId(),
+      name: '餐补出勤计算规则',
+      type: 'attendance',
+      allowanceType: '餐补',
+      description: '根据实际出勤天数计算餐补，每日25元，最多22天',
+      enabled: true,
+      config: {
+        perDayAmount: 25,
+        attendanceDays: 22,
+        minAmount: 0,
+        maxAmount: 550,
+        effectiveDate: dayjs().subtract(3, 'month').format('YYYY-MM-DD'),
+        departments: []
+      },
+      createTime: dayjs().subtract(3, 'month').toISOString(),
+      updateTime: now
+    },
+    {
+      id: generateId(),
+      name: '通讯补贴按项目系数',
+      type: 'project',
+      allowanceType: '通讯补贴',
+      description: '基础200元，按参与项目数量乘以系数1.5计算',
+      enabled: true,
+      config: {
+        baseAmount: 200,
+        projectMultiplier: 1.5,
+        minAmount: 200,
+        maxAmount: 600,
+        effectiveDate: dayjs().subtract(2, 'month').format('YYYY-MM-DD'),
+        departments: ['技术部', '研发部']
+      },
+      createTime: dayjs().subtract(2, 'month').toISOString(),
+      updateTime: now
+    },
+    {
+      id: generateId(),
+      name: '住房补贴绩效关联',
+      type: 'performance',
+      allowanceType: '住房补贴',
+      description: '基础1000元，按绩效考核结果的80%发放',
+      enabled: false,
+      config: {
+        baseAmount: 1000,
+        performanceRatio: 80,
+        minAmount: 500,
+        maxAmount: 2000,
+        effectiveDate: dayjs().format('YYYY-MM-DD'),
+        departments: []
+      },
+      createTime: dayjs().subtract(1, 'month').toISOString(),
+      updateTime: now
+    },
+    {
+      id: generateId(),
+      name: '研发部特殊津贴',
+      type: 'fixed',
+      allowanceType: '交通补贴',
+      description: '研发部额外交通补贴，每月固定800元',
+      enabled: true,
+      config: {
+        fixedAmount: 800,
+        minAmount: 0,
+        maxAmount: 1000,
+        effectiveDate: dayjs().subtract(1, 'month').format('YYYY-MM-DD'),
+        departments: ['研发部']
+      },
+      createTime: dayjs().subtract(1, 'month').toISOString(),
+      updateTime: now
+    },
+    {
+      id: generateId(),
+      name: '高温津贴',
+      type: 'attendance',
+      allowanceType: '其他',
+      description: '夏季高温津贴，每出勤日15元，6-9月生效',
+      enabled: false,
+      config: {
+        perDayAmount: 15,
+        attendanceDays: 22,
+        minAmount: 0,
+        maxAmount: 330,
+        effectiveDate: dayjs().month(5).format('YYYY-MM-DD'),
+        expiryDate: dayjs().month(8).endOf('month').format('YYYY-MM-DD'),
+        departments: []
+      },
+      createTime: dayjs().subtract(7, 'day').toISOString(),
+      updateTime: now
+    }
+  ]
 }
 
 /**

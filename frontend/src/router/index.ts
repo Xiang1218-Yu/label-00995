@@ -81,6 +81,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '津贴发放管理', icon: 'Wallet', roles: ['admin'] }
       },
       {
+        path: 'allowance/rules',
+        name: 'AllowanceRules',
+        component: () => import('@/views/allowance/AllowanceRules.vue'),
+        meta: { title: '发放规则配置', hidden: true, roles: ['admin'] }
+      },
+      {
         path: 'salary/declaration',
         name: 'SalaryDeclaration',
         component: () => import('@/views/salary/DeclarationList.vue'),

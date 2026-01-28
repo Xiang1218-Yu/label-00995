@@ -70,6 +70,34 @@ export interface AllowanceRecord {
   allowanceType: string // 津贴类型
 }
 
+// 津贴发放规则
+export interface AllowanceRule {
+  id: string
+  name: string // 规则名称
+  type: 'fixed' | 'project' | 'performance' | 'attendance' // 规则类型：固定金额、按项目计算、绩效关联、出勤关联
+  allowanceType: string // 适用的津贴类型
+  description: string // 规则说明
+  enabled: boolean // 是否启用
+  config: AllowanceRuleConfig // 规则配置
+  createTime: string
+  updateTime: string
+}
+
+// 津贴规则配置
+export interface AllowanceRuleConfig {
+  fixedAmount?: number // 固定金额（type为fixed时）
+  projectMultiplier?: number // 项目系数（type为project时）
+  performanceRatio?: number // 绩效比例（type为performance时，百分比）
+  baseAmount?: number // 基础金额
+  maxAmount?: number // 最大金额
+  minAmount?: number // 最小金额
+  attendanceDays?: number // 出勤天数要求（type为attendance时）
+  perDayAmount?: number // 每日金额（type为attendance时）
+  effectiveDate?: string // 生效日期
+  expiryDate?: string // 失效日期
+  departments?: string[] // 适用部门（空为全部）
+}
+
 // 薪酬申报
 export interface SalaryDeclaration {
   id: string
