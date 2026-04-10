@@ -37,6 +37,7 @@
                 <el-dropdown-menu>
                   <el-dropdown-item command="excel">导出 Excel</el-dropdown-item>
                   <el-dropdown-item command="csv">导出 CSV</el-dropdown-item>
+                  <el-dropdown-item command="monthlySummary">月度支出汇总</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -115,7 +116,7 @@ import { useRemittanceStore } from '@/stores/remittance'
 import { useProjectStore } from '@/stores/project'
 import type { Remittance } from '@/types'
 import * as XLSX from 'xlsx'
-import { exportToCSV } from '@/utils/export'
+import { exportToCSV, exportMonthlyRemittanceSummary } from '@/utils/export'
 
 const router = useRouter()
 const remittanceStore = useRemittanceStore()
@@ -216,6 +217,18 @@ function handlePageChange(page: number): void {
 }
 
 function handleExport(type: string): void {
+  if (type === 'monthlySummary') {
+    const data = filteredData.value.map(item => ({
+      amount: item.amount,
+      projectName: getProjectName(item.projectId),
+      date: item.date,
+      status: item.status
+    }))
+    exportMonthlyRemittanceSummary(data)
+    ElMessage.success('月度支出汇总导出成功')
+    return
+  }
+
   const data = filteredData.value.map(item => ({
     汇款单位: item.company,
     金额: item.amount,

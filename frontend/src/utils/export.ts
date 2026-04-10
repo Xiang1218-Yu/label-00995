@@ -65,6 +65,29 @@ export interface ExpenseItem {
   status?: string
 }
 
+/**
+ * 汇款项目月度汇总项
+ */
+interface ProjectMonthlySummary {
+  项目名称: string
+  月份: string
+  金额: number
+  笔数: number
+}
+
+/**
+ * 汇款月度汇总数据项
+ */
+export interface RemittanceMonthlyItem {
+  amount: number
+  projectName: string
+  date: string
+  status?: string
+}
+
+/**
+ * 导出现有月度支出汇总（按支出类型）
+ */
 export function exportMonthlyExpenseSummary(expenses: ExpenseItem[], filename: string = '月度支出汇总'): void {
   if (expenses.length === 0) {
     return
@@ -138,6 +161,98 @@ export function exportMonthlyExpenseSummary(expenses: ExpenseItem[], filename: s
 
   const colWidths1 = [{ wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 15 }]
   const colWidths2 = [{ wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 10 }]
+  ws1['!cols'] = colWidths1
+  ws2['!cols'] = colWidths2
+
+  XLSX.writeFile(wb, `${filename}_${new Date().getTime()}.xlsx`)
+}
+
+/**
+ * 导出汇款月度支出汇总（按项目汇总）
+ * 一个文件包含两张表：
+ * 1. 月度支出汇总表
+ * 2. 各关联项目月度汇总表
+ * @param remittances 汇款数据数组
+ * @param filename 文件名前缀
+ */
+export function exportMonthlyRemittanceSummary(
+  remittances: RemittanceMonthlyItem[],
+  filename: string = '汇款月度支出汇总'
+): void {
+  if (remittances.length === 0) {
+    return
+  }
+
+  const monthlyData: Record<string, MonthlySummary> = {}
+  const projectMonthlyData: Record<string, ProjectMonthlySummary & { _projectName: string; _month: string }> = {}
+
+  remittances.forEach(remittance => {
+    const month = dayjs(remittance.date).format('YYYY-MM')
+    const projectName = remittance.projectName || '未关联项目'
+    const amount = remittance.amount
+
+    if (!monthlyData[month]) {
+      monthlyData[month] = {
+        月份: month,
+        总支出: 0,
+        笔数: 0,
+        平均单笔金额: 0,
+        最大单笔金额: 0
+      }
+    }
+    monthlyData[month].总支出 += amount
+    monthlyData[month].笔数 += 1
+    if (amount > monthlyData[month].最大单笔金额) {
+      monthlyData[month].最大单笔金额 = amount
+    }
+
+    const projectKey = `${projectName}_${month}`
+    if (!projectMonthlyData[projectKey]) {
+      projectMonthlyData[projectKey] = {
+        _projectName: projectName,
+        _month: month,
+        项目名称: projectName,
+        月份: month,
+        金额: 0,
+        笔数: 0
+      }
+    }
+    projectMonthlyData[projectKey].金额 += amount
+    projectMonthlyData[projectKey].笔数 += 1
+  })
+
+  Object.keys(monthlyData).forEach(month => {
+    monthlyData[month].平均单笔金额 = monthlyData[month].总支出 / monthlyData[month].笔数
+  })
+
+  const monthlySummarySheetData = Object.values(monthlyData)
+    .sort((a, b) => b.月份.localeCompare(a.月份))
+    .map(item => ({
+      月份: item.月份,
+      总支出: Number(item.总支出.toFixed(2)),
+      笔数: item.笔数,
+      平均单笔金额: Number(item.平均单笔金额.toFixed(2)),
+      最大单笔金额: Number(item.最大单笔金额.toFixed(2))
+    }))
+
+  const projectMonthlySheetData = Object.values(projectMonthlyData)
+    .sort((a, b) => b.月份.localeCompare(a.月份) || a.项目名称.localeCompare(b.项目名称))
+    .map(item => ({
+      项目名称: item.项目名称,
+      月份: item.月份,
+      金额: Number(item.金额.toFixed(2)),
+      笔数: item.笔数
+    }))
+
+  const ws1 = XLSX.utils.json_to_sheet(monthlySummarySheetData)
+  const ws2 = XLSX.utils.json_to_sheet(projectMonthlySheetData)
+  const wb = XLSX.utils.book_new()
+
+  XLSX.utils.book_append_sheet(wb, ws1, '月度支出汇总')
+  XLSX.utils.book_append_sheet(wb, ws2, '项目月度汇总')
+
+  const colWidths1 = [{ wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 15 }]
+  const colWidths2 = [{ wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 10 }]
   ws1['!cols'] = colWidths1
   ws2['!cols'] = colWidths2
 
