@@ -37,6 +37,7 @@
                 <el-dropdown-menu>
                   <el-dropdown-item command="excel">导出 Excel</el-dropdown-item>
                   <el-dropdown-item command="csv">导出 CSV</el-dropdown-item>
+                  <el-dropdown-item command="monthly">月度支出汇总</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -115,7 +116,7 @@ import { useRemittanceStore } from '@/stores/remittance'
 import { useProjectStore } from '@/stores/project'
 import type { Remittance } from '@/types'
 import * as XLSX from 'xlsx'
-import { exportToCSV } from '@/utils/export'
+import { exportToCSV, exportToExcelWithSheets, calculateMonthlySummary } from '@/utils/export'
 
 const router = useRouter()
 const remittanceStore = useRemittanceStore()
@@ -216,6 +217,11 @@ function handlePageChange(page: number): void {
 }
 
 function handleExport(type: string): void {
+  if (type === 'monthly') {
+    exportMonthlySummary()
+    return
+  }
+
   const data = filteredData.value.map(item => ({
     汇款单位: item.company,
     金额: item.amount,
@@ -235,6 +241,26 @@ function handleExport(type: string): void {
     XLSX.writeFile(wb, `汇款列表_${new Date().getTime()}.xlsx`)
     ElMessage.success('Excel导出成功')
   }
+}
+
+/**
+ * 导出月度支出汇总Excel
+ * 包含两张工作表：总体月度汇总 + 各项目月度汇总
+ */
+function exportMonthlySummary(): void {
+  const { monthlySummary, projectMonthlySummary } = calculateMonthlySummary(
+    filteredData.value,
+    getProjectName
+  )
+
+  exportToExcelWithSheets(
+    [
+      { name: '月度支出汇总', data: monthlySummary },
+      { name: '项目月度汇总', data: projectMonthlySummary }
+    ],
+    '月度支出汇总'
+  )
+  ElMessage.success('月度支出汇总导出成功')
 }
 
 onMounted(() => {
