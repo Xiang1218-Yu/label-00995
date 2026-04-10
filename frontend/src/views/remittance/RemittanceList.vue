@@ -37,6 +37,7 @@
                 <el-dropdown-menu>
                   <el-dropdown-item command="excel">导出 Excel</el-dropdown-item>
                   <el-dropdown-item command="csv">导出 CSV</el-dropdown-item>
+                  <el-dropdown-item command="monthlySummary">导出月度支出汇总</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -215,7 +216,16 @@ function handlePageChange(page: number): void {
   pagination.page = page
 }
 
+/**
+ * 处理导出操作
+ * @param type 导出类型
+ */
 function handleExport(type: string): void {
+  if (type === 'monthlySummary') {
+    exportMonthlySummary()
+    return
+  }
+
   const data = filteredData.value.map(item => ({
     汇款单位: item.company,
     金额: item.amount,
@@ -235,6 +245,185 @@ function handleExport(type: string): void {
     XLSX.writeFile(wb, `汇款列表_${new Date().getTime()}.xlsx`)
     ElMessage.success('Excel导出成功')
   }
+}
+
+/**
+ * 导出月度支出汇总
+ * 包含两张表：月度支出汇总表和项目月度汇总表
+ */
+function exportMonthlySummary(): void {
+  const monthlySummaryData = generateMonthlySummaryData()
+  const projectMonthlyData = generateProjectMonthlyData()
+
+  const monthlyWorksheet = XLSX.utils.json_to_sheet(monthlySummaryData)
+  const projectWorksheet = XLSX.utils.json_to_sheet(projectMonthlyData)
+
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, monthlyWorksheet, '月度支出汇总')
+  XLSX.utils.book_append_sheet(workbook, projectWorksheet, '项目月度汇总')
+
+  const fileName = `月度支出汇总_${new Date().getTime()}.xlsx`
+  XLSX.writeFile(workbook, fileName)
+  ElMessage.success('月度支出汇总导出成功')
+}
+
+/**
+ * 月度汇总导出数据项
+ */
+interface MonthlySummaryExportItem {
+  月份: string
+  总金额: string
+  总笔数: number
+  已报销金额: string
+  已报销笔数: number
+  待报销金额: string
+  待报销笔数: number
+}
+
+/**
+ * 生成月度支出汇总数据
+ * @returns 按月份汇总的支出数据（用于导出）
+ */
+function generateMonthlySummaryData(): MonthlySummaryExportItem[] {
+  const data = filteredData.value
+  const monthlyMap = new Map<string, MonthlySummaryItem>()
+
+  data.forEach(item => {
+    const month = item.date.substring(0, 7)
+    const existing = monthlyMap.get(month)
+
+    if (existing) {
+      existing.totalAmount += item.amount
+      existing.recordCount += 1
+      if (item.status === '已报销') {
+        existing.reimbursedAmount += item.amount
+        existing.reimbursedCount += 1
+      } else {
+        existing.pendingAmount += item.amount
+        existing.pendingCount += 1
+      }
+    } else {
+      monthlyMap.set(month, {
+        month,
+        totalAmount: item.amount,
+        recordCount: 1,
+        reimbursedAmount: item.status === '已报销' ? item.amount : 0,
+        reimbursedCount: item.status === '已报销' ? 1 : 0,
+        pendingAmount: item.status === '待报销' ? item.amount : 0,
+        pendingCount: item.status === '待报销' ? 1 : 0
+      })
+    }
+  })
+
+  return Array.from(monthlyMap.values())
+    .sort((a, b) => a.month.localeCompare(b.month))
+    .map(item => ({
+      月份: item.month,
+      总金额: item.totalAmount.toFixed(2),
+      总笔数: item.recordCount,
+      已报销金额: item.reimbursedAmount.toFixed(2),
+      已报销笔数: item.reimbursedCount,
+      待报销金额: item.pendingAmount.toFixed(2),
+      待报销笔数: item.pendingCount
+    }))
+}
+
+/**
+ * 项目月度汇总导出数据项
+ */
+interface ProjectMonthlyExportItem {
+  项目名称: string
+  月份: string
+  总金额: string
+  总笔数: number
+  已报销金额: string
+  已报销笔数: number
+  待报销金额: string
+  待报销笔数: number
+}
+
+/**
+ * 生成项目月度汇总数据
+ * @returns 按项目和月份汇总的支出数据（用于导出）
+ */
+function generateProjectMonthlyData(): ProjectMonthlyExportItem[] {
+  const data = filteredData.value
+  const projectMonthlyMap = new Map<string, ProjectMonthlyItem>()
+
+  data.forEach(item => {
+    const month = item.date.substring(0, 7)
+    const projectName = getProjectName(item.projectId)
+    const key = `${projectName}_${month}`
+    const existing = projectMonthlyMap.get(key)
+
+    if (existing) {
+      existing.totalAmount += item.amount
+      existing.recordCount += 1
+      if (item.status === '已报销') {
+        existing.reimbursedAmount += item.amount
+        existing.reimbursedCount += 1
+      } else {
+        existing.pendingAmount += item.amount
+        existing.pendingCount += 1
+      }
+    } else {
+      projectMonthlyMap.set(key, {
+        projectName,
+        month,
+        totalAmount: item.amount,
+        recordCount: 1,
+        reimbursedAmount: item.status === '已报销' ? item.amount : 0,
+        reimbursedCount: item.status === '已报销' ? 1 : 0,
+        pendingAmount: item.status === '待报销' ? item.amount : 0,
+        pendingCount: item.status === '待报销' ? 1 : 0
+      })
+    }
+  })
+
+  return Array.from(projectMonthlyMap.values())
+    .sort((a, b) => {
+      if (a.projectName !== b.projectName) {
+        return a.projectName.localeCompare(b.projectName)
+      }
+      return a.month.localeCompare(b.month)
+    })
+    .map(item => ({
+      项目名称: item.projectName,
+      月份: item.month,
+      总金额: item.totalAmount.toFixed(2),
+      总笔数: item.recordCount,
+      已报销金额: item.reimbursedAmount.toFixed(2),
+      已报销笔数: item.reimbursedCount,
+      待报销金额: item.pendingAmount.toFixed(2),
+      待报销笔数: item.pendingCount
+    }))
+}
+
+/**
+ * 月度汇总数据项接口
+ */
+interface MonthlySummaryItem {
+  month: string
+  totalAmount: number
+  recordCount: number
+  reimbursedAmount: number
+  reimbursedCount: number
+  pendingAmount: number
+  pendingCount: number
+}
+
+/**
+ * 项目月度汇总数据项接口
+ */
+interface ProjectMonthlyItem {
+  projectName: string
+  month: string
+  totalAmount: number
+  recordCount: number
+  reimbursedAmount: number
+  reimbursedCount: number
+  pendingAmount: number
+  pendingCount: number
 }
 
 onMounted(() => {
