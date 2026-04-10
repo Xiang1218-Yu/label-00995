@@ -44,6 +44,7 @@
                 <el-dropdown-menu>
                   <el-dropdown-item command="excel">导出 Excel</el-dropdown-item>
                   <el-dropdown-item command="csv">导出 CSV</el-dropdown-item>
+                  <el-dropdown-item command="monthlySummary">月度支出汇总</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -132,8 +133,7 @@ import { Plus, ArrowDown } from '@element-plus/icons-vue'
 import { useReimbursementStore } from '@/stores/reimbursement'
 import { useProjectStore } from '@/stores/project'
 import type { Reimbursement } from '@/types'
-import * as XLSX from 'xlsx'
-import { exportToCSV } from '@/utils/export'
+import { exportToCSV, exportMonthlyExpenseSummary } from '@/utils/export'
 
 const router = useRouter()
 const reimbursementStore = useReimbursementStore()
@@ -248,6 +248,17 @@ function handlePageChange(page: number): void {
 }
 
 function handleExport(type: string): void {
+  if (type === 'monthlySummary') {
+    const expenseData = reimbursementStore.reimbursements.map(item => ({
+      amount: item.amount,
+      category: item.type,
+      date: item.createTime
+    }))
+    exportMonthlyExpenseSummary(expenseData)
+    ElMessage.success('月度支出汇总导出成功')
+    return
+  }
+
   const data = filteredData.value.map(item => ({
     单号: item.reimbursementNumber,
     申请人: item.applicant,
@@ -262,11 +273,13 @@ function handleExport(type: string): void {
     exportToCSV(data, '报销列表')
     ElMessage.success('CSV导出成功')
   } else {
-    const ws = XLSX.utils.json_to_sheet(data)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, '报销列表')
-    XLSX.writeFile(wb, `报销列表_${new Date().getTime()}.xlsx`)
-    ElMessage.success('Excel导出成功')
+    import('xlsx').then(XLSX => {
+      const ws = XLSX.utils.json_to_sheet(data)
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, '报销列表')
+      XLSX.writeFile(wb, `报销列表_${new Date().getTime()}.xlsx`)
+      ElMessage.success('Excel导出成功')
+    })
   }
 }
 
