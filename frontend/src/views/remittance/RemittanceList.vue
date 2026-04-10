@@ -37,6 +37,7 @@
                 <el-dropdown-menu>
                   <el-dropdown-item command="excel">导出 Excel</el-dropdown-item>
                   <el-dropdown-item command="csv">导出 CSV</el-dropdown-item>
+                  <el-dropdown-item command="monthlySummary">月度支出汇总</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -228,6 +229,8 @@ function handleExport(type: string): void {
   if (type === 'csv') {
     exportToCSV(data, '汇款列表')
     ElMessage.success('CSV导出成功')
+  } else if (type === 'monthlySummary') {
+    exportMonthlySummary()
   } else {
     const ws = XLSX.utils.json_to_sheet(data)
     const wb = XLSX.utils.book_new()
@@ -235,6 +238,99 @@ function handleExport(type: string): void {
     XLSX.writeFile(wb, `汇款列表_${new Date().getTime()}.xlsx`)
     ElMessage.success('Excel导出成功')
   }
+}
+
+function exportMonthlySummary(): void {
+  const monthlyData = aggregateByMonth(filteredData.value)
+  const projectMonthlyData = aggregateByProjectAndMonth(filteredData.value)
+  
+  const ws1 = XLSX.utils.json_to_sheet(monthlyData)
+  const ws2 = XLSX.utils.json_to_sheet(projectMonthlyData)
+  const wb = XLSX.utils.book_new()
+  
+  XLSX.utils.book_append_sheet(wb, ws1, '月度支出汇总')
+  XLSX.utils.book_append_sheet(wb, ws2, '项目月度汇总')
+  XLSX.writeFile(wb, `月度支出汇总_${new Date().getTime()}.xlsx`)
+  
+  ElMessage.success('月度支出汇总导出成功')
+}
+
+function aggregateByMonth(data: Remittance[]): Array<{ 月份: string, 汇款笔数: number, 总支出: number, 已报销笔数: number, 已报销: number, 待报销笔数: number, 待报销: number }> {
+  const monthMap = new Map<string, { count: number, total: number, reimbursedCount: number, reimbursed: number, pendingCount: number, pending: number }>()
+  
+  data.forEach(item => {
+    const month = item.date.substring(0, 7)
+    const existing = monthMap.get(month) || { count: 0, total: 0, reimbursedCount: 0, reimbursed: 0, pendingCount: 0, pending: 0 }
+    
+    existing.count++
+    existing.total += item.amount
+    if (item.status === '已报销') {
+      existing.reimbursedCount++
+      existing.reimbursed += item.amount
+    } else {
+      existing.pendingCount++
+      existing.pending += item.amount
+    }
+    
+    monthMap.set(month, existing)
+  })
+  
+  return Array.from(monthMap.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([month, stats]) => ({
+      月份: month,
+      汇款笔数: stats.count,
+      总支出: parseFloat(stats.total.toFixed(2)),
+      已报销笔数: stats.reimbursedCount,
+      已报销: parseFloat(stats.reimbursed.toFixed(2)),
+      待报销笔数: stats.pendingCount,
+      待报销: parseFloat(stats.pending.toFixed(2))
+    }))
+}
+
+function aggregateByProjectAndMonth(data: Remittance[]): Array<{ 项目名称: string, 月份: string, 汇款笔数: number, 总支出: number, 已报销笔数: number, 已报销: number, 待报销笔数: number, 待报销: number }> {
+  const projMonthMap = new Map<string, { projectName: string, month: string, count: number, total: number, reimbursedCount: number, reimbursed: number, pendingCount: number, pending: number }>()
+  
+  data.forEach(item => {
+    const projectName = getProjectName(item.projectId)
+    const month = item.date.substring(0, 7)
+    const key = `${projectName}_${month}`
+    const existing = projMonthMap.get(key) || { 
+      projectName, 
+      month, 
+      count: 0,
+      total: 0, 
+      reimbursedCount: 0,
+      reimbursed: 0, 
+      pendingCount: 0,
+      pending: 0 
+    }
+    
+    existing.count++
+    existing.total += item.amount
+    if (item.status === '已报销') {
+      existing.reimbursedCount++
+      existing.reimbursed += item.amount
+    } else {
+      existing.pendingCount++
+      existing.pending += item.amount
+    }
+    
+    projMonthMap.set(key, existing)
+  })
+  
+  return Array.from(projMonthMap.values())
+    .sort((a, b) => a.projectName.localeCompare(b.projectName) || a.month.localeCompare(b.month))
+    .map(item => ({
+      项目名称: item.projectName,
+      月份: item.month,
+      汇款笔数: item.count,
+      总支出: parseFloat(item.total.toFixed(2)),
+      已报销笔数: item.reimbursedCount,
+      已报销: parseFloat(item.reimbursed.toFixed(2)),
+      待报销笔数: item.pendingCount,
+      待报销: parseFloat(item.pending.toFixed(2))
+    }))
 }
 
 onMounted(() => {
