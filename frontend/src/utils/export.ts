@@ -1,6 +1,7 @@
 /**
  * 导出工具函数
  */
+import * as XLSX from 'xlsx'
 
 /**
  * 导出数据为 CSV 文件
@@ -32,4 +33,25 @@ export function exportToCSV(data: Record<string, any>[], filename: string): void
   link.download = `${filename}_${new Date().getTime()}.csv`
   link.click()
   URL.revokeObjectURL(link.href)
+}
+
+/**
+ * 导出多工作表 Excel 文件
+ * @param sheets 工作表数组，包含名称和数据
+ * @param filename 文件名（不含扩展名）
+ */
+export function exportToExcelWithSheets(
+  sheets: { name: string; data: Record<string, any>[] }[],
+  filename: string
+): void {
+  const wb = XLSX.utils.book_new()
+  
+  sheets.forEach(sheet => {
+    if (sheet.data.length > 0) {
+      const ws = XLSX.utils.json_to_sheet(sheet.data)
+      XLSX.utils.book_append_sheet(wb, ws, sheet.name)
+    }
+  })
+  
+  XLSX.writeFile(wb, `${filename}_${new Date().getTime()}.xlsx`)
 }

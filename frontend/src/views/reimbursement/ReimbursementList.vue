@@ -44,6 +44,7 @@
                 <el-dropdown-menu>
                   <el-dropdown-item command="excel">导出 Excel</el-dropdown-item>
                   <el-dropdown-item command="csv">导出 CSV</el-dropdown-item>
+                  <el-dropdown-item command="monthlySummary">月度支出汇总导出</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -132,8 +133,8 @@ import { Plus, ArrowDown } from '@element-plus/icons-vue'
 import { useReimbursementStore } from '@/stores/reimbursement'
 import { useProjectStore } from '@/stores/project'
 import type { Reimbursement } from '@/types'
-import * as XLSX from 'xlsx'
-import { exportToCSV } from '@/utils/export'
+import dayjs from 'dayjs'
+import { exportToCSV, exportToExcelWithSheets } from '@/utils/export'
 
 const router = useRouter()
 const reimbursementStore = useReimbursementStore()
@@ -247,7 +248,71 @@ function handlePageChange(page: number): void {
   pagination.page = page
 }
 
+function calculateMonthlySummary(): Record<string, any>[] {
+  const monthlyData: Record<string, { total: number; count: number }> = {}
+
+  reimbursementStore.allReimbursements.forEach(item => {
+    const month = dayjs(item.createTime).format('YYYY-MM')
+    if (!monthlyData[month]) {
+      monthlyData[month] = { total: 0, count: 0 }
+    }
+    monthlyData[month].total += item.amount
+    monthlyData[month].count += 1
+  })
+
+  return Object.entries(monthlyData)
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([month, data]) => ({
+      月份: month,
+      报销笔数: data.count,
+      支出总额: data.total.toFixed(2)
+    }))
+}
+
+function calculateCategorySummary(): Record<string, any>[] {
+  const categoryData: Record<string, Record<string, number>> = {}
+
+  reimbursementStore.allReimbursements.forEach(item => {
+    const month = dayjs(item.createTime).format('YYYY-MM')
+    const type = item.type
+    if (!categoryData[month]) {
+      categoryData[month] = {}
+    }
+    if (!categoryData[month][type]) {
+      categoryData[month][type] = 0
+    }
+    categoryData[month][type] += item.amount
+  })
+
+  const allTypes = [...new Set(reimbursementStore.allReimbursements.map(item => item.type))]
+
+  return Object.entries(categoryData)
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([month, types]) => {
+      const row: Record<string, any> = { 月份: month }
+      allTypes.forEach(type => {
+        row[type] = types[type]?.toFixed(2) || '0.00'
+      })
+      return row
+    })
+}
+
 function handleExport(type: string): void {
+  if (type === 'monthlySummary') {
+    const monthlySummary = calculateMonthlySummary()
+    const categorySummary = calculateCategorySummary()
+
+    exportToExcelWithSheets(
+      [
+        { name: '月度支出汇总', data: monthlySummary },
+        { name: '按类型分类月度汇总', data: categorySummary }
+      ],
+      '月度支出汇总报表'
+    )
+    ElMessage.success('月度汇总报表导出成功')
+    return
+  }
+
   const data = filteredData.value.map(item => ({
     单号: item.reimbursementNumber,
     申请人: item.applicant,
@@ -262,10 +327,7 @@ function handleExport(type: string): void {
     exportToCSV(data, '报销列表')
     ElMessage.success('CSV导出成功')
   } else {
-    const ws = XLSX.utils.json_to_sheet(data)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, '报销列表')
-    XLSX.writeFile(wb, `报销列表_${new Date().getTime()}.xlsx`)
+    exportToExcelWithSheets([{ name: '报销列表', data }], '报销列表')
     ElMessage.success('Excel导出成功')
   }
 }
