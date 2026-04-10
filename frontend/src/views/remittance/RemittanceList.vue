@@ -37,6 +37,7 @@
                 <el-dropdown-menu>
                   <el-dropdown-item command="excel">导出 Excel</el-dropdown-item>
                   <el-dropdown-item command="csv">导出 CSV</el-dropdown-item>
+                  <el-dropdown-item command="monthly">月度支出汇总</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -115,7 +116,7 @@ import { useRemittanceStore } from '@/stores/remittance'
 import { useProjectStore } from '@/stores/project'
 import type { Remittance } from '@/types'
 import * as XLSX from 'xlsx'
-import { exportToCSV } from '@/utils/export'
+import { exportToCSV, exportToMultiSheetExcel } from '@/utils/export'
 
 const router = useRouter()
 const remittanceStore = useRemittanceStore()
@@ -228,6 +229,8 @@ function handleExport(type: string): void {
   if (type === 'csv') {
     exportToCSV(data, '汇款列表')
     ElMessage.success('CSV导出成功')
+  } else if (type === 'monthly') {
+    handleMonthlyExport()
   } else {
     const ws = XLSX.utils.json_to_sheet(data)
     const wb = XLSX.utils.book_new()
@@ -235,6 +238,98 @@ function handleExport(type: string): void {
     XLSX.writeFile(wb, `汇款列表_${new Date().getTime()}.xlsx`)
     ElMessage.success('Excel导出成功')
   }
+}
+
+/**
+ * 处理月度汇总导出
+ */
+function handleMonthlyExport(): void {
+  const data = filteredData.value
+  if (data.length === 0) {
+    ElMessage.warning('没有可导出的数据')
+    return
+  }
+
+  const monthlySummary = getMonthlySummary(data)
+  const projectSummary = getProjectMonthlySummary(data)
+
+  exportToMultiSheetExcel([
+    { name: '月度支出汇总', data: monthlySummary },
+    { name: '项目月度汇总', data: projectSummary }
+  ], '月度支出汇总')
+  ElMessage.success('月度支出汇总导出成功')
+}
+
+/**
+ * 按月份汇总汇款支出
+ * @param data 汇款数据
+ * @returns 月度汇总数据
+ */
+function getMonthlySummary(data: Remittance[]): Record<string, any>[] {
+  const summaryMap: Record<string, {
+    month: string,
+    amount: number,
+    count: number,
+    pendingAmount: number,
+    reimbursedAmount: number
+  }> = {}
+
+  data.forEach(item => {
+    const month = item.date.substring(0, 7)
+    if (!summaryMap[month]) {
+      summaryMap[month] = { month, amount: 0, count: 0, pendingAmount: 0, reimbursedAmount: 0 }
+    }
+    summaryMap[month].amount += item.amount
+    summaryMap[month].count++
+    if (item.status === '待报销') {
+      summaryMap[month].pendingAmount += item.amount
+    } else {
+      summaryMap[month].reimbursedAmount += item.amount
+    }
+  })
+
+  return Object.values(summaryMap).sort((a, b) => b.month.localeCompare(a.month)).map(item => ({
+    月份: item.month,
+    汇款笔数: item.count,
+    总金额: item.amount.toFixed(2),
+    待报销金额: item.pendingAmount.toFixed(2),
+    已报销金额: item.reimbursedAmount.toFixed(2)
+  }))
+}
+
+/**
+ * 按项目和月份汇总汇款支出
+ * @param data 汇款数据
+ * @returns 项目月度汇总数据
+ */
+function getProjectMonthlySummary(data: Remittance[]): Record<string, any>[] {
+  const summaryMap: Record<string, {
+    projectName: string,
+    month: string,
+    amount: number,
+    count: number
+  }> = {}
+
+  data.forEach(item => {
+    const projectName = getProjectName(item.projectId)
+    const month = item.date.substring(0, 7)
+    const key = `${projectName}_${month}`
+    if (!summaryMap[key]) {
+      summaryMap[key] = { projectName, month, amount: 0, count: 0 }
+    }
+    summaryMap[key].amount += item.amount
+    summaryMap[key].count++
+  })
+
+  return Object.values(summaryMap).sort((a, b) => {
+    const monthCompare = b.month.localeCompare(a.month)
+    return monthCompare !== 0 ? monthCompare : a.projectName.localeCompare(b.projectName)
+  }).map(item => ({
+    项目名称: item.projectName,
+    月份: item.month,
+    汇款笔数: item.count,
+    总金额: item.amount.toFixed(2)
+  }))
 }
 
 onMounted(() => {
