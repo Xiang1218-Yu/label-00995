@@ -255,17 +255,20 @@ function exportMonthlySummary(): void {
   ElMessage.success('月度支出汇总导出成功')
 }
 
-function aggregateByMonth(data: Remittance[]): Array<{ 月份: string, 总支出: number, 已报销: number, 待报销: number }> {
-  const monthMap = new Map<string, { total: number, reimbursed: number, pending: number }>()
+function aggregateByMonth(data: Remittance[]): Array<{ 月份: string, 汇款笔数: number, 总支出: number, 已报销笔数: number, 已报销: number, 待报销笔数: number, 待报销: number }> {
+  const monthMap = new Map<string, { count: number, total: number, reimbursedCount: number, reimbursed: number, pendingCount: number, pending: number }>()
   
   data.forEach(item => {
     const month = item.date.substring(0, 7)
-    const existing = monthMap.get(month) || { total: 0, reimbursed: 0, pending: 0 }
+    const existing = monthMap.get(month) || { count: 0, total: 0, reimbursedCount: 0, reimbursed: 0, pendingCount: 0, pending: 0 }
     
+    existing.count++
     existing.total += item.amount
     if (item.status === '已报销') {
+      existing.reimbursedCount++
       existing.reimbursed += item.amount
     } else {
+      existing.pendingCount++
       existing.pending += item.amount
     }
     
@@ -276,14 +279,17 @@ function aggregateByMonth(data: Remittance[]): Array<{ 月份: string, 总支出
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([month, stats]) => ({
       月份: month,
+      汇款笔数: stats.count,
       总支出: parseFloat(stats.total.toFixed(2)),
+      已报销笔数: stats.reimbursedCount,
       已报销: parseFloat(stats.reimbursed.toFixed(2)),
+      待报销笔数: stats.pendingCount,
       待报销: parseFloat(stats.pending.toFixed(2))
     }))
 }
 
-function aggregateByProjectAndMonth(data: Remittance[]): Array<{ 项目名称: string, 月份: string, 总支出: number, 已报销: number, 待报销: number }> {
-  const projMonthMap = new Map<string, { projectName: string, month: string, total: number, reimbursed: number, pending: number }>()
+function aggregateByProjectAndMonth(data: Remittance[]): Array<{ 项目名称: string, 月份: string, 汇款笔数: number, 总支出: number, 已报销笔数: number, 已报销: number, 待报销笔数: number, 待报销: number }> {
+  const projMonthMap = new Map<string, { projectName: string, month: string, count: number, total: number, reimbursedCount: number, reimbursed: number, pendingCount: number, pending: number }>()
   
   data.forEach(item => {
     const projectName = getProjectName(item.projectId)
@@ -292,15 +298,21 @@ function aggregateByProjectAndMonth(data: Remittance[]): Array<{ 项目名称: s
     const existing = projMonthMap.get(key) || { 
       projectName, 
       month, 
+      count: 0,
       total: 0, 
+      reimbursedCount: 0,
       reimbursed: 0, 
+      pendingCount: 0,
       pending: 0 
     }
     
+    existing.count++
     existing.total += item.amount
     if (item.status === '已报销') {
+      existing.reimbursedCount++
       existing.reimbursed += item.amount
     } else {
+      existing.pendingCount++
       existing.pending += item.amount
     }
     
@@ -312,8 +324,11 @@ function aggregateByProjectAndMonth(data: Remittance[]): Array<{ 项目名称: s
     .map(item => ({
       项目名称: item.projectName,
       月份: item.month,
+      汇款笔数: item.count,
       总支出: parseFloat(item.total.toFixed(2)),
+      已报销笔数: item.reimbursedCount,
       已报销: parseFloat(item.reimbursed.toFixed(2)),
+      待报销笔数: item.pendingCount,
       待报销: parseFloat(item.pending.toFixed(2))
     }))
 }
